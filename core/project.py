@@ -28,7 +28,11 @@ def load_project(path: str | Path) -> tuple[np.ndarray, dict[str, np.ndarray], d
         arrays = {}
         for key in manifest.get("maps", []):
             with Image.open(io.BytesIO(archive.read(f"textures/{key}.png"))) as image:
-                arrays[key] = np.asarray(image.convert("RGBA" if "A" in image.getbands() else "RGB")).copy()
+                # Preserve grayscale maps as 2D arrays; expand only palette/unsupported modes.
+                if image.mode in ("L", "RGB", "RGBA"):
+                    arrays[key] = np.asarray(image).copy()
+                else:
+                    arrays[key] = np.asarray(image.convert("RGBA" if "A" in image.getbands() else "RGB")).copy()
     if "source" not in arrays:
         raise ValueError("Project does not contain a source texture")
     source = arrays.pop("source")
